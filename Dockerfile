@@ -2,8 +2,13 @@
 FROM node:18-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-# Forzamos la instalación de todas las dependencias incluyendo TypeScript
-RUN npm install --include=dev
+
+# Instalamos las dependencias base
+RUN npm install
+
+# Forzamos la instalación global de TypeScript para asegurar que exista 'tsc'
+RUN npm install -g typescript
+
 COPY . .
 RUN npm run build
 
