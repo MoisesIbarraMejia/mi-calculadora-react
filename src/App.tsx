@@ -15,17 +15,33 @@ export default function App() {
     setOperacion('0');
   };
 
-  const calcular = () => {
+  const ejecutarProcesoPython = async () => {
+    try {
+      // Simulamos que enviamos el número 5 y el número 3 para la fórmula de Python
+      const respuesta = await fetch('http://localhost:3000/api/proceso-python', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ num1: 10000, num2: 952984198 })
+      });
+      
+      const datos = await respuesta.json();
+      setOperacion(datos.resultado); // Muestra el resultado de Python en la pantalla
+    } catch (error) {
+      setOperacion('Error Backend');
+    }
+  };
+
+
+  const calcular = async () => { // 1. Agregamos 'async' aquí abajo
     try {
       let expresion = operacion;
+      let resultadoFinal = ''; // Variable temporal para guardar el resultado antes de enviarlo a la BD
 
       // Si la operación contiene la división entera '//'
       if (expresion.includes('//')) {
-        // Separamos los números usando el '//' como punto de división
         const partes = expresion.split('//');
         
         if (partes.length === 2) {
-          // Evaluamos matemáticamente la parte izquierda y la parte derecha por separado
           const num1 = eval(partes[0]);
           const num2 = eval(partes[1]);
           
@@ -34,20 +50,33 @@ export default function App() {
             return;
           }
 
-          // Math.floor quita los decimales dando el resultado entero (ej: 5 // 2 = 2)
           const resultadoEntero = Math.floor(num1 / num2);
-          setOperacion(String(resultadoEntero));
-          return;
+          resultadoFinal = String(resultadoEntero); // Guardamos el resultado de la división entera
         }
+      } else {
+        // Si es una operación normal (+, -, *, /) se calcula directo
+        const resultado = eval(expresion);
+        resultadoFinal = String(resultado); // Guardamos el resultado normal
       }
 
-      // Si es una operación normal (+, -, *, /) se calcula directo
-      const resultado = eval(expresion);
-      setOperacion(String(resultado));
+      // 2. Actualizamos la pantalla visual de React
+      setOperacion(resultadoFinal);
+
+      // 3. ENVIAMOS A LA BASE DE DATOS MEDIANTE TU SERVIDOR NODE.JS
+      await fetch('http://localhost:3000/api/historial', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          expresion: expresion,    // Guarda la operación escrita (ej: "5 // 2" o "2 + 2")
+          resultado: resultadoFinal // Guarda la respuesta limpia (ej: "2" o "4")
+        })
+      });
+
     } catch (error) {
       setOperacion('Error');
     }
   };
+
 
 
   return (
@@ -83,6 +112,10 @@ export default function App() {
           
           <button className="bg-slate-700 hover:bg-slate-600 text-white p-4 rounded-2xl font-bold col-span-2 transition shadow-md cursor-pointer" onClick={() => agregarNumero('0')}>0</button>
           <button className="bg-emerald-500 hover:bg-emerald-400 text-slate-900 p-4 rounded-2xl font-bold col-span-2 transition shadow-md cursor-pointer" onClick={calcular}>=</button>
+
+          <button className="bg-purple-600 hover:bg-purple-500 text-white p-4 rounded-2xl font-bold col-span-4 transition shadow-md cursor-pointer text-center" onClick={ejecutarProcesoPython}>Ejecutar Fórmula en Python
+          </button>
+
         </div>
       </div>
     </div>
